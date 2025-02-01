@@ -8,7 +8,7 @@ defaults:
     - theory: nat-add
 
 n_conjectures: 200
-goals: nat-add-synthetic
+goals: nat-add-easy
 continue: null
 early_exit: false
 

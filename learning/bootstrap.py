@@ -291,4 +291,10 @@ def main(cfg: DictConfig):
         asyncio.run(teacher_loop(cfg, mle_log))
 
 if __name__ == '__main__':
-    main()
+    import sys
+    original_argv = sys.argv
+    sys.argv = [original_argv[0]]
+    try:
+        main()
+    finally:
+        sys.argv = original_argv
