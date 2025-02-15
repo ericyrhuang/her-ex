@@ -5,6 +5,8 @@ import torch
 import json
 import peano
 import bootstrap
+import torch.serialization
+from transformers.generation.configuration_utils import CompileConfig
 
 
 
@@ -43,14 +45,14 @@ def main():
     
     # Verify that the model file exists
     if os.path.exists(args.model_path) and args.model_path.endswith(".pt"):
-        models = {f"checkpoint_{os.path.basename(args.model_path).split('.')[0]}": torch.load(args.model_path)}
+        models = {f"checkpoint_{os.path.basename(args.model_path).split('.')[0]}": torch.load(args.model_path, map_location=torch.device('cpu'))}
     elif os.path.exists(os.path.join(args.model_path, "model.pt")):
-        models = {f"checkpoint_{os.path.basename(args.model_path).split('.')[0]}": torch.load(os.path.join(args.model_path, "model.pt"))}
+        models = {f"checkpoint_{os.path.basename(args.model_path).split('.')[0]}": torch.load(os.path.join(args.model_path, "model.pt"), map_location=torch.device('cpu'))}
     elif os.path.exists(os.path.join(args.model_path, "0.pt")):
         models = {}
         for i in range(15):
             if os.path.exists(os.path.join(args.model_path, f"{i}.pt")):
-                models[f"checkpoint_{i}"] = torch.load(os.path.join(args.model_path, f"{i}.pt"))
+                models[f"checkpoint_{i}"] = torch.load(os.path.join(args.model_path, f"{i}.pt"), map_location=torch.device('cpu'))
             else:
                 continue
     else:
@@ -66,6 +68,7 @@ def main():
     else:
         raise FileNotFoundError(f"final_goal_path does not exist: {final_goal_path}")
 
+    torch.serialization.add_safe_globals({'CompileConfig': CompileConfig})
 
     json_results = {}
     final_goal_name = os.path.basename(final_goal_path).split(".")[0]
@@ -78,7 +81,7 @@ def main():
         agent_dump = buff.getvalue()
         # Evaluate the model
         print(f"Goal: {final_goal_name} - Evaluating model {i}")
-        val_loss, num_mcts_steps = bootstrap.get_val_loss(agent_dump, final_goals_formatted, theory, premises, 0)
+        val_loss, num_mcts_steps = bootstrap.get_val_loss(agent_dump, final_goals_formatted, theory, premises)
         print(f"Validation loss: {val_loss},\t Number of MCTS steps: {sum(num_mcts_steps)/len(num_mcts_steps)}")
         json_results[f"checkpoint_{i}"] = {"val_loss": val_loss, "num_mcts_steps": sum(num_mcts_steps)/len(num_mcts_steps)}
 
